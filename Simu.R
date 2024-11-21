@@ -8,9 +8,7 @@ library(nloptr)
 
 
 
-#setwd("C:/Users/bdeketelaere/OneDrive - UCL/Documents/Sauvegardessimulations/Contrainte41")
-#setwd("C:/Users/bdeketelaere/OneDrive - UCL/Documents/Code thèse/Thèse")
-setwd("C:/Users/bdeketelaere/OneDrive - UCL/Documents/Sauvegardessimulations/Papier1apres11nov2023/5comp")
+#setwd("C:/Users/bdeketelaere/OneDrive - UCL/Documents/Sauvegardessimulations/Papier1apres11nov2023/5comp")
 
 
 
@@ -63,16 +61,6 @@ beta.CV4.01=matrix(NA,nrow=M,ncol=4)#derniere colonne de beta est sigma
 
 eval_f=loglik.IC.beta.general2.sigma.subfun
 
-# gamma=c(1);lengamma=length(gamma)
-# beta=c(0,1,1);lenbeta=length(beta)
-
-
-# opts <- list( "algorithm"= "NLOPT_LN_COBYLA",
-#               "ftol_rel"= 1.0e-3,
-#               "maxeval"= 5000,
-#               #              "local_opts" = local_opts,
-#               "print_level" = 3,
-#               maxtime=100)
 
 
 # tau=0.5
@@ -94,7 +82,6 @@ BESTM4.01=rep(NA,M)
 cl <- makeCluster(no_cores-1)  
 registerDoParallel(cl)
 
-#Déterminer quel est une valeur un peu optimale pour le maximum d'itération
 clusterExport(cl=cl,list("Norm",
                          "check_function",
                          "ELD.cdf2.cont.sigma",
@@ -115,7 +102,8 @@ for (kk in 1:M) {
   X2full=rbinom(n=n,1,prob=0.5)
   Xfull=cbind(X1full,X2full)
   Yfulluncen=X1full+X2full+eps
-  Yfull=tranform.IC(Yfulluncen,l=0.75*lc,seed=kk)
+  #Yfull=tranform.IC(Yfulluncen,l=0.75*lc,seed=kk)
+  Yfull=transform.IC.extrval.V3(Yfulluncen,lmin = 0.1,lmax=2*lc*0.75,seed=1)
   
   sum(Yfull[,2] > Yfull[,1]); mean(Yfull[,2]-Yfull[,1]);sum(Yfull[,2]-Yfull[,1]>0.1)
   
@@ -138,7 +126,7 @@ for (kk in 1:M) {
     # Compter le nombre de points satisfaisant la contrainte
     nb_points_satisfaisants <- 0
     
-    #sera utilisé apres pour les theta qui sont généralement de plu en plus petits
+    #sera utilisé apres pour les theta qui sont généralement de plus en plus petits
     suite_geom=numeric(m)
     for (j in 1:m) {
       suite_geom[j] <- 1 * 0.75^(j-1)
@@ -187,12 +175,7 @@ for (kk in 1:M) {
     STARTS=rbind(STARTS1,STARTS2,STARTS3,STARTS4)
     
     nrowstarts=nrow(STARTS)
-    
-    # opts <- list( "algorithm"= "NLOPT_LN_COBYLA",
-    #               "ftol_rel"= 0.005,
-    #               "maxeval"= 5000,
-    #               "print_level" = 3,
-    #               maxtime=100)
+
     
     clusterExport(cl=cl,list("Yfull",
                              "Xfull",#ajouter Xfull ici si covariable
@@ -255,9 +238,7 @@ for (kk in 1:M) {
       beta1.best[k]=res.par[indexbeta1][index.min.temp]
       beta2.best[k]=res.par[indexbeta2][index.min.temp]
       gamma0.best[k]=res.par[indexgamma0][index.min.temp]
-      # res.par[indexstatus]
-      # res.par[indexiterations]
-      ## Compute sum of the evaluations of the check function (see equation 5)
+      ## Compute sum of the evaluations of the check function (see equation (24))
       pred.error[k]=mean( 1/  apply(cbind(Ytest[,2]-Ytest[,1],rep(C2,lengthYtest)),MARGIN = 1,FUN=max)  *  (check_function((Ytest[,1]/2 + Ytest[,2]/2) - beta0.best[k] - beta1.best[k]%*%Xtest[,1] - beta2.best[k]%*%Xtest[,2] , tau )))
     }
     CV.crit[m+1]=mean(pred.error) 
@@ -283,11 +264,6 @@ for (kk in 1:M) {
   STARTS=rbind(STARTS1,STARTS2,STARTS3,STARTS4)
   nrowstarts=nrow(STARTS)
   
-  # opts <- list( "algorithm"= "NLOPT_LN_COBYLA",
-  #               "ftol_rel"= 0.005,
-  #               "maxeval"= 5000,
-  #               "print_level" = 3,
-  #               maxtime=100)
   
   clusterExport(cl=cl,list("Y",#ajouter X ici si cov
                            "X",
@@ -332,7 +308,6 @@ for (kk in 1:M) {
   beta.CV4.01[kk,3] = res.par[indexbeta2][index.min.temp]
   beta.CV4.01[kk,4] = res.par[indexgamma0][index.min.temp]
   
-  #toc()
   
   count4.01[which.min(CV.crit)]=count4.01[which.min(CV.crit)]+1
   
@@ -357,65 +332,65 @@ M=5
 n=100
 lc=1
 tau=0.5
-K=4
+K=5
 C2=0.1 #Constante CV
 no_cores <- detectCores(logical = TRUE)
 seed=1
 
-A1=Simulation5.3(M,n,lc,tau,K=4,C2=0.1,mmax=4,no_cores,seed)
+A1=Simulation5.3(M,n,lc,tau,K=K,mmax=4,no_cores,seed)
 ################################################################################
 M=500
 n=200
 lc=1
 tau=0.5
-K=4
+K=5
 C2=0.1 #Constante CV
 no_cores <- detectCores(logical = TRUE)
 seed=1
 
-A2=Simulation5.3(M,n,lc,tau,K=4,C2=0.1,mmax=4,no_cores,seed)
+A2=Simulation5.3(M,n,lc,tau,K=K,mmax=4,no_cores,seed)
 ################################################################################
 M=500
 n=400
 lc=1
 tau=0.5
-K=4
+K=5
 C2=0.1 #Constante CV
 no_cores <- detectCores(logical = TRUE)
 seed=1
 
-A3=Simulation5.3(M,n,lc,tau,K=4,C2=0.1,mmax=4,no_cores,seed)
+A3=Simulation5.3(M,n,lc,tau,K=K,mmax=4,no_cores,seed)
 ################################################################################
 M=500
 n=100
 lc=2
 tau=0.5
-K=4
+K=5
 C2=0.1 #Constante CV
 no_cores <- detectCores(logical = TRUE)
 seed=1
 
-A4=Simulation5.3(M,n,lc,tau,K=4,C2=0.1,mmax=4,no_cores,seed)
+A4=Simulation5.3(M,n,lc,tau,K=5,mmax=4,no_cores,seed)
 ################################################################################
 M=500
 n=200
 lc=2
 tau=0.5
-K=4
+K=5
 C2=0.1 #Constante CV
 no_cores <- detectCores(logical = TRUE)
 seed=1
 
-A5=Simulation5.3(M,n,lc,tau,K=4,C2=0.1,mmax=4,no_cores,seed)
+A5=Simulation5.3(M,n,lc,tau,K=5,mmax=4,no_cores,seed)
 ################################################################################
 M=500
 n=400
 lc=2
 tau=0.5
-K=4
+K=5
 C2=0.1 #Constante CV
 no_cores <- detectCores(logical = TRUE)
 seed=1
 
-A6=Simulation5.3(M,n,lc,tau,K=4,C2=0.1,mmax=4,no_cores,seed)
+A6=Simulation5.3(M,n,lc,tau,K=K,mmax=4,no_cores,seed)
 ################################################################################
